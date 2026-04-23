@@ -1,0 +1,94 @@
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { settings, locked, toast, loadSettings, showToast, scheduleSave } from "./lib/store";
+  import { api } from "./lib/api";
+  import TitleBar from "./components/TitleBar.svelte";
+  import Main from "./views/Main.svelte";
+  import Settings from "./views/Settings.svelte";
+  import Lock from "./views/Lock.svelte";
+  import { listen } from "@tauri-apps/api/event";
+  import { getCurrentWebview } from "@tauri-apps/api/webview";
+
+  let view: "main" | "settings" = $state("main");
+
+  onMount(async () => {
+    await loadSettings();
+    document.documentElement.setAttribute("data-theme", $settings.theme);
+    document.documentElement.style.setProperty("--bg-solid", $settings.bgColor);
+    await api.applyWindow($settings);
+    await api.applyHotkeys($settings);
+
+    const l = await api.isLocked();
+    locked.set(l);
+
+    // Ctrl + wheel → opacity
+    window.addEventListener("wheel", async (e) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      const step = e.deltaY < 0 ? 0.03 : -0.03;
+      const next = Math.max(0.2, Math.min(1, +($settings.opacity + step).toFixed(2)));
+      settings.update((s) => ({ ...s, opacity: next }));
+      await api.setOpacity(next);
+      scheduleSave();
+      showToast(`透明度 ${Math.round(next * 100)}%`);
+    }, { passive: false });
+
+    // Drag-drop open
+    const webview = getCurrentWebview();
+    await webview.onDragDropEvent(async (event) => {
+      if (event.payload.type === "drop") {
+        for (const p of event.payload.paths) {
+          if (/\.(txt|md|markdown|log|json|yaml|yml|ini|cfg|rs|ts|js|py)$/i.test(p)) {
+            try {
+              const note = await api.importFile(p);
+              showToast(`已打开 ${note.name}`);
+              window.dispatchEvent(new CustomEvent("notes-refresh", { detail: note.id }));
+            } catch (e) {
+              showToast(`打开失败: ${e}`);
+            }
+          }
+        }
+      }
+    });
+
+    // Events from backend
+    await listen<string>("view-change", (e) => { view = e.payload as any; });
+    await listen("locked", () => locked.set(true));
+    await listen("unlocked", () => locked.set(false));
+    await listen<any>("settings-updated", async (e) => {
+      settings.set(e.payload);
+      document.documentElement.setAttribute("data-theme", e.payload.theme);
+      document.documentElement.style.setProperty("--bg-solid", e.payload.bgColor);
+    });
+
+    // Hide context menu in production
+    document.addEventListener("contextmenu", (e) => {
+      const t = e.target as HTMLElement;
+      if (t.tagName !== "TEXTAREA" && t.tagName !== "INPUT") e.preventDefault();
+    });
+  });
+
+  $effect(() => {
+    document.documentElement.setAttribute("data-theme", $settings.theme);
+    document.documentElement.style.setProperty("--bg-solid", $settings.bgColor);
+  });
+</script>
+
+{#if $locked}
+  <Lock />
+{/if}
+<div class="app-root" style="opacity: {$settings.opacity}">
+  {#if $settings.showTitleBar}
+    <TitleBar bind:view />
+  {/if}
+  <div class="body">
+    {#if view === "main"}
+      <Main />
+    {:else}
+      <Settings onBack={() => (view = "main")} />
+    {/if}
+  </div>
+</div>
+{#if $toast}
+  <div class="toast">{$toast}</div>
+{/if}

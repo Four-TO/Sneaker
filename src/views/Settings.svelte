@@ -1,0 +1,227 @@
+<script lang="ts">
+  import { settings, scheduleSave, showToast } from "../lib/store";
+  import { api } from "../lib/api";
+
+  let { onBack }: { onBack: () => void } = $props();
+
+  let masterOld = $state("");
+  let masterNew = $state("");
+  let masterNew2 = $state("");
+  let capturing = $state<string | null>(null);
+
+  async function applyOpacity(v: number) {
+    settings.update((s) => ({ ...s, opacity: v }));
+    await api.setOpacity(v);
+    scheduleSave();
+  }
+  async function applyTheme(v: "dark" | "light") {
+    settings.update((s) => ({ ...s, theme: v }));
+    scheduleSave();
+  }
+  async function applyBg(v: string) {
+    settings.update((s) => ({ ...s, bgColor: v }));
+    scheduleSave();
+  }
+  async function applyBlur(v: string) {
+    settings.update((s) => ({ ...s, blur: v as any }));
+    await api.applyTheme($settings);
+    scheduleSave();
+  }
+  async function applyTop(v: boolean) {
+    settings.update((s) => ({ ...s, alwaysOnTop: v }));
+    await api.setAlwaysOnTop(v);
+    scheduleSave();
+  }
+  async function applyTitleBar(v: boolean) {
+    settings.update((s) => ({ ...s, showTitleBar: v, passthrough: !v && s.passthrough === "semi" ? "off" : s.passthrough }));
+    await api.setTitleBar(v);
+    await api.setPassthrough($settings.passthrough);
+    scheduleSave();
+  }
+  async function applyTray(v: boolean) {
+    settings.update((s) => ({ ...s, showTrayIcon: v }));
+    await api.setTrayVisible(v);
+    scheduleSave();
+    if (!v) showToast("托盘已隐藏，注意用热键唤出");
+  }
+  async function applyTaskbar(v: boolean) {
+    settings.update((s) => ({ ...s, skipTaskbar: v }));
+    await api.setSkipTaskbar(v);
+    scheduleSave();
+  }
+  async function applyPassthrough(v: string) {
+    settings.update((s) => ({ ...s, passthrough: v as any }));
+    await api.setPassthrough(v);
+    scheduleSave();
+  }
+  async function applyAutostart(v: boolean) {
+    settings.update((s) => ({ ...s, autostart: v }));
+    await api.setAutostart(v);
+    scheduleSave();
+  }
+  async function applyAutoLock(v: number) {
+    settings.update((s) => ({ ...s, autoLockMinutes: v }));
+    scheduleSave();
+  }
+
+  function captureKey(field: keyof typeof $settings.hotkeys) {
+    capturing = field;
+    const handler = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
+      const parts: string[] = [];
+      if (e.ctrlKey) parts.push("Ctrl");
+      if (e.altKey) parts.push("Alt");
+      if (e.shiftKey) parts.push("Shift");
+      if (e.metaKey) parts.push("Meta");
+      let k = e.key;
+      if (k.length === 1) k = k.toUpperCase();
+      if (k === " ") k = "Space";
+      parts.push(k);
+      const combo = parts.join("+");
+      settings.update((s) => ({ ...s, hotkeys: { ...s.hotkeys, [field]: combo } }));
+      scheduleSave();
+      api.applyHotkeys($settings).then((ok) => {
+        if (!ok) showToast("热键注册失败，可能冲突");
+        else showToast(`已设置 ${combo}`);
+      }).catch(() => showToast("热键注册失败"));
+      window.removeEventListener("keydown", handler, true);
+      capturing = null;
+    };
+    window.addEventListener("keydown", handler, true);
+  }
+
+  async function saveMasterPassword() {
+    if (masterNew !== masterNew2) { showToast("两次密码不一致"); return; }
+    if (!masterNew) { showToast("密码为空"); return; }
+    try {
+      await api.setMasterPassword(masterOld, masterNew);
+      settings.update((s) => ({ ...s, hasMasterPassword: true }));
+      masterOld = masterNew = masterNew2 = "";
+      showToast("主密码已设置");
+    } catch (e) {
+      showToast(`失败: ${e}`);
+    }
+  }
+
+  async function clearMasterPassword() {
+    if (!masterOld) { showToast("请输入当前密码"); return; }
+    try {
+      await api.setMasterPassword(masterOld, "");
+      settings.update((s) => ({ ...s, hasMasterPassword: false }));
+      masterOld = "";
+      showToast("已清除主密码");
+    } catch (e) {
+      showToast(`失败: ${e}`);
+    }
+  }
+
+  async function lockNow() {
+    await api.lockNow();
+  }
+</script>
+
+<div class="settings">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+    <button class="ghost" onclick={onBack} style="background:transparent;border:1px solid var(--border);color:var(--fg);padding:4px 10px;border-radius:4px;cursor:pointer;">◀ 返回</button>
+    <div style="flex:1;"></div>
+  </div>
+
+  <h2>外观</h2>
+  <div class="row"><label>主题</label>
+    <select value={$settings.theme} onchange={(e) => applyTheme((e.currentTarget as HTMLSelectElement).value as any)}>
+      <option value="dark">深色</option><option value="light">浅色</option>
+    </select>
+  </div>
+  <div class="row"><label>透明度 {Math.round($settings.opacity * 100)}%</label>
+    <input type="range" min="0.2" max="1" step="0.01" value={$settings.opacity}
+      oninput={(e) => applyOpacity(+(e.currentTarget as HTMLInputElement).value)} />
+  </div>
+  <div class="row"><label>背景色</label>
+    <input type="text" value={$settings.bgColor} oninput={(e) => applyBg((e.currentTarget as HTMLInputElement).value)} placeholder="#14161e" />
+  </div>
+  <div class="row"><label>模糊效果</label>
+    <select value={$settings.blur} onchange={(e) => applyBlur((e.currentTarget as HTMLSelectElement).value)}>
+      <option value="none">关闭</option><option value="acrylic">Acrylic</option><option value="mica">Mica</option>
+    </select>
+  </div>
+
+  <h2>窗口行为</h2>
+  <div class="row"><label>显示标题栏</label>
+    <input type="checkbox" checked={$settings.showTitleBar} onchange={(e) => applyTitleBar((e.currentTarget as HTMLInputElement).checked)} />
+  </div>
+  <div class="row"><label>始终置顶</label>
+    <input type="checkbox" checked={$settings.alwaysOnTop} onchange={(e) => applyTop((e.currentTarget as HTMLInputElement).checked)} />
+  </div>
+  <div class="row"><label>穿透模式</label>
+    <select value={$settings.passthrough} onchange={(e) => applyPassthrough((e.currentTarget as HTMLSelectElement).value)}>
+      <option value="off">关闭</option>
+      <option value="semi" disabled={!$settings.showTitleBar}>半穿透 {$settings.showTitleBar ? "" : "(需标题栏)"}</option>
+      <option value="full">全穿透</option>
+    </select>
+  </div>
+  <div class="row"><label>隐藏任务栏图标</label>
+    <input type="checkbox" checked={$settings.skipTaskbar} onchange={(e) => applyTaskbar((e.currentTarget as HTMLInputElement).checked)} />
+  </div>
+  <div class="row"><label>显示托盘图标</label>
+    <input type="checkbox" checked={$settings.showTrayIcon} onchange={(e) => applyTray((e.currentTarget as HTMLInputElement).checked)} />
+  </div>
+
+  <h2>全局快捷键 {capturing ? `(按下组合键为 ${capturing} 赋值…)` : ""}</h2>
+  <div class="row"><label>显隐主窗</label>
+    <button class="ghost" onclick={() => captureKey("toggleShow")}>{$settings.hotkeys.toggleShow}</button>
+  </div>
+  <div class="row"><label>切置顶</label>
+    <button class="ghost" onclick={() => captureKey("toggleTop")}>{$settings.hotkeys.toggleTop}</button>
+  </div>
+  <div class="row"><label>切穿透</label>
+    <button class="ghost" onclick={() => captureKey("togglePassthrough")}>{$settings.hotkeys.togglePassthrough}</button>
+  </div>
+  <div class="row"><label>老板键（隐藏并锁定）</label>
+    <button class="ghost" onclick={() => captureKey("bossKey")}>{$settings.hotkeys.bossKey}</button>
+  </div>
+  <div class="row"><label>快速捕获</label>
+    <button class="ghost" onclick={() => captureKey("quickCapture")}>{$settings.hotkeys.quickCapture}</button>
+  </div>
+
+  <h2>安全</h2>
+  <div class="row"><label>当前状态</label>
+    <span class="hint">{$settings.hasMasterPassword ? "已启用主密码" : "未设置主密码"}</span>
+  </div>
+  {#if $settings.hasMasterPassword}
+    <div class="row"><label>立即锁定</label><button onclick={lockNow}>锁定</button></div>
+  {/if}
+  <div class="row"><label>自动锁定 (分钟, 0=关)</label>
+    <input type="number" min="0" max="999" value={$settings.autoLockMinutes}
+      oninput={(e) => applyAutoLock(+(e.currentTarget as HTMLInputElement).value)} />
+  </div>
+  <div class="row"><label>当前密码</label>
+    <input type="password" bind:value={masterOld} placeholder={$settings.hasMasterPassword ? "必填" : "(首次设置留空)"} />
+  </div>
+  <div class="row"><label>新密码</label>
+    <input type="password" bind:value={masterNew} />
+  </div>
+  <div class="row"><label>确认新密码</label>
+    <input type="password" bind:value={masterNew2} />
+  </div>
+  <div class="row">
+    <label></label>
+    <button onclick={saveMasterPassword}>设置主密码</button>
+    {#if $settings.hasMasterPassword}
+      <button class="ghost" onclick={clearMasterPassword}>清除主密码</button>
+    {/if}
+  </div>
+  <div class="row"><span class="hint">私密笔记：在主界面选中笔记后，在笔记列表加密（通过下一版菜单）。当前版本可在笔记上通过右键暂未实现，将在 M3 完善。</span></div>
+
+  <h2>启动</h2>
+  <div class="row"><label>开机自启</label>
+    <input type="checkbox" checked={$settings.autostart} onchange={(e) => applyAutostart((e.currentTarget as HTMLInputElement).checked)} />
+  </div>
+
+  <h2>数据</h2>
+  <div class="row"><label>笔记目录</label>
+    <span class="hint">{$settings.notesDir || "(默认: %APPDATA%/Sneaker/notes)"}</span>
+  </div>
+  <div class="row"><label>同步</label><span class="hint">即将推出</span></div>
+</div>
