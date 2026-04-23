@@ -40,4 +40,5 @@ export const api = {
 
   bossHide: () => invoke("boss_hide"),
   toggleMain: () => invoke("toggle_main"),
+  pauseHotkeys: () => invoke("pause_hotkeys"),
 };

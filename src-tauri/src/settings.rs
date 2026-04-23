@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+fn default_true() -> bool { true }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Hotkeys {
@@ -39,6 +41,10 @@ pub struct Settings {
     pub has_master_password: bool,
     pub hotkeys: Hotkeys,
     pub notes_dir: String,
+    #[serde(default = "default_true")]
+    pub show_sidebar: bool,
+    #[serde(default)]
+    pub transparent_bg: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub master_hash: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -70,6 +76,8 @@ impl Default for Settings {
             has_master_password: false,
             hotkeys: Hotkeys::default(),
             notes_dir: String::new(),
+            show_sidebar: true,
+            transparent_bg: false,
             master_hash: None,
             master_salt: None,
             window_x: None,

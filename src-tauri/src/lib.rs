@@ -56,6 +56,7 @@ pub fn run() {
             commands::is_locked,
             commands::boss_hide,
             commands::toggle_main,
+            commands::pause_hotkeys,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();

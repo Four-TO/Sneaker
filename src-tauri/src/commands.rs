@@ -5,6 +5,7 @@ use crate::tray;
 use crate::hotkeys;
 use crate::win_util;
 use tauri::{AppHandle, Emitter, Manager, Runtime, State, WebviewWindow};
+use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
 fn emit_settings<R: Runtime>(app: &AppHandle<R>, s: &Settings) {
     let _ = app.emit("settings-updated", s);
@@ -266,6 +267,12 @@ pub fn boss_hide<R: Runtime>(app: AppHandle<R>, state: State<'_, Shared>) -> Res
         *state.locked.lock() = true;
         let _ = app.emit("locked", ());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn pause_hotkeys<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
+    let _ = app.global_shortcut().unregister_all();
     Ok(())
 }
 

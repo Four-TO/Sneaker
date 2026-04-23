@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { api, type NoteMeta } from "../lib/api";
-  import { showToast } from "../lib/store";
+  import { showToast, settings } from "../lib/store";
 
   let notes: NoteMeta[] = $state([]);
   let activeId: string | null = $state(null);
@@ -94,6 +94,7 @@
   });
 </script>
 
+{#if $settings.showSidebar}
 <div class="sidebar">
   <div class="sidebar-header">
     <button onclick={newNote} title="新建">+ 新建</button>
@@ -115,6 +116,7 @@
     {/if}
   </div>
 </div>
+{/if}
 <div class="editor">
   {#if passwordPrompt}
     <div class="empty" style="flex-direction:column;gap:10px;">

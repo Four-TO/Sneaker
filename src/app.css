@@ -39,6 +39,19 @@ body { user-select: none; }
   border: 1px solid var(--border);
   backdrop-filter: blur(12px);
 }
+.app-root.transparent-bg {
+  background: transparent;
+  border-color: transparent;
+  backdrop-filter: none;
+}
+.app-root.transparent-bg .titlebar,
+.app-root.transparent-bg .sidebar,
+.app-root.transparent-bg .body {
+  background: transparent;
+  opacity: var(--content-opacity, 1);
+}
+.app-root.transparent-bg .titlebar { border-bottom: none; }
+.app-root.transparent-bg .sidebar { border-right: none; }
 
 .titlebar {
   height: 28px;

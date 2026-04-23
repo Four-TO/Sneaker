@@ -28,7 +28,17 @@ export interface Settings {
   hasMasterPassword: boolean;
   hotkeys: Hotkey;
   notesDir: string;
+  showSidebar: boolean;
+  transparentBg: boolean;
 }
+
+export const defaultHotkeys: Hotkey = {
+  toggleShow: "Ctrl+Alt+N",
+  toggleTop: "Ctrl+Alt+T",
+  togglePassthrough: "Ctrl+Alt+P",
+  bossKey: "Ctrl+Alt+H",
+  quickCapture: "Ctrl+Alt+Q",
+};
 
 export const defaultSettings: Settings = {
   theme: "dark",
@@ -43,14 +53,10 @@ export const defaultSettings: Settings = {
   autostart: false,
   autoLockMinutes: 0,
   hasMasterPassword: false,
-  hotkeys: {
-    toggleShow: "Ctrl+Alt+N",
-    toggleTop: "Ctrl+Alt+T",
-    togglePassthrough: "Ctrl+Alt+P",
-    bossKey: "Ctrl+Alt+H",
-    quickCapture: "Ctrl+Alt+Q",
-  },
+  hotkeys: { ...defaultHotkeys },
   notesDir: "",
+  showSidebar: true,
+  transparentBg: false,
 };
 
 export const settings = writable<Settings>({ ...defaultSettings });

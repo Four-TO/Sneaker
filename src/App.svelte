@@ -77,7 +77,9 @@
 {#if $locked}
   <Lock />
 {/if}
-<div class="app-root" style="opacity: {$settings.opacity}">
+<div class="app-root"
+  class:transparent-bg={$settings.transparentBg}
+  style="--content-opacity: {$settings.transparentBg ? $settings.opacity : 1}; opacity: {$settings.transparentBg ? 1 : $settings.opacity}">
   {#if $settings.showTitleBar}
     <TitleBar bind:view />
   {/if}

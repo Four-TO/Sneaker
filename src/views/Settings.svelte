@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { settings, scheduleSave, showToast } from "../lib/store";
+  import { settings, scheduleSave, showToast, defaultHotkeys } from "../lib/store";
   import { api } from "../lib/api";
 
   let { onBack }: { onBack: () => void } = $props();
@@ -64,11 +64,26 @@
     scheduleSave();
   }
 
-  function captureKey(field: keyof typeof $settings.hotkeys) {
+  async function captureKey(field: keyof typeof $settings.hotkeys) {
     capturing = field;
+    await api.pauseHotkeys();
+    showToast("按下组合键… (Esc 取消)");
+    const finish = (combo: string | null) => {
+      if (combo) {
+        settings.update((s) => ({ ...s, hotkeys: { ...s.hotkeys, [field]: combo } }));
+        scheduleSave();
+      }
+      api.applyHotkeys($settings).then((ok) => {
+        if (combo && !ok) showToast("热键注册失败，可能冲突");
+        else if (combo) showToast(`已设置 ${combo}`);
+      }).catch(() => showToast("热键注册失败"));
+      window.removeEventListener("keydown", handler, true);
+      capturing = null;
+    };
     const handler = (e: KeyboardEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      if (e.key === "Escape") { finish(null); return; }
       if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
       const parts: string[] = [];
       if (e.ctrlKey) parts.push("Ctrl");
@@ -79,17 +94,21 @@
       if (k.length === 1) k = k.toUpperCase();
       if (k === " ") k = "Space";
       parts.push(k);
-      const combo = parts.join("+");
-      settings.update((s) => ({ ...s, hotkeys: { ...s.hotkeys, [field]: combo } }));
-      scheduleSave();
-      api.applyHotkeys($settings).then((ok) => {
-        if (!ok) showToast("热键注册失败，可能冲突");
-        else showToast(`已设置 ${combo}`);
-      }).catch(() => showToast("热键注册失败"));
-      window.removeEventListener("keydown", handler, true);
-      capturing = null;
+      finish(parts.join("+"));
     };
     window.addEventListener("keydown", handler, true);
+  }
+
+  async function restoreHotkeys() {
+    settings.update((s) => ({ ...s, hotkeys: { ...defaultHotkeys } }));
+    scheduleSave();
+    const ok = await api.applyHotkeys($settings);
+    showToast(ok ? "已恢复默认快捷键" : "恢复默认但注册失败");
+  }
+
+  async function toggleTransparentBg(v: boolean) {
+    settings.update((s) => ({ ...s, transparentBg: v }));
+    scheduleSave();
   }
 
   async function saveMasterPassword() {
@@ -141,6 +160,9 @@
   <div class="row"><label>背景色</label>
     <input type="text" value={$settings.bgColor} oninput={(e) => applyBg((e.currentTarget as HTMLInputElement).value)} placeholder="#14161e" />
   </div>
+  <div class="row"><label>背景全透明 <span class="hint">(仅文字应用透明度)</span></label>
+    <input type="checkbox" checked={$settings.transparentBg} onchange={(e) => toggleTransparentBg((e.currentTarget as HTMLInputElement).checked)} />
+  </div>
   <div class="row"><label>模糊效果</label>
     <select value={$settings.blur} onchange={(e) => applyBlur((e.currentTarget as HTMLSelectElement).value)}>
       <option value="none">关闭</option><option value="acrylic">Acrylic</option><option value="mica">Mica</option>
@@ -168,7 +190,10 @@
     <input type="checkbox" checked={$settings.showTrayIcon} onchange={(e) => applyTray((e.currentTarget as HTMLInputElement).checked)} />
   </div>
 
-  <h2>全局快捷键 {capturing ? `(按下组合键为 ${capturing} 赋值…)` : ""}</h2>
+  <h2>全局快捷键 {capturing ? `(按下组合键为 ${capturing} 赋值，Esc 取消)` : ""}</h2>
+  <div class="row"><label>恢复默认</label>
+    <button class="ghost" onclick={restoreHotkeys}>重置全部</button>
+  </div>
   <div class="row"><label>显隐主窗</label>
     <button class="ghost" onclick={() => captureKey("toggleShow")}>{$settings.hotkeys.toggleShow}</button>
   </div>

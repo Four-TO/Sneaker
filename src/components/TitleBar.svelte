@@ -23,6 +23,11 @@
     showToast(`穿透: ${next === "off" ? "关" : next === "semi" ? "半" : "全"}`);
   }
 
+  async function toggleSidebar() {
+    settings.update((s) => ({ ...s, showSidebar: !s.showSidebar }));
+    scheduleSave();
+  }
+
   async function minimize() {
     await getCurrentWindow().minimize();
   }
@@ -33,6 +38,11 @@
 
 <div class="titlebar">
   <span class="title">Sneaker</span>
+  {#if view === "main"}
+    <button onclick={toggleSidebar} title={$settings.showSidebar ? "隐藏侧栏" : "显示侧栏"}>
+      {$settings.showSidebar ? "⮜" : "⮞"}
+    </button>
+  {/if}
   <button onclick={() => (view = view === "main" ? "settings" : "main")} title="切换">
     {view === "main" ? "⚙" : "◀"}
   </button>
