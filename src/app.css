@@ -81,6 +81,32 @@ body { user-select: none; }
 }
 .titlebar button:hover { background: rgba(255,255,255,0.08); color: var(--fg); }
 
+.bottombar {
+  height: 26px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  gap: 3px;
+  background: rgba(0,0,0,0.18);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--fg-dim);
+  flex-shrink: 0;
+}
+.bottombar button {
+  background: transparent;
+  border: none;
+  color: var(--fg-dim);
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.bottombar button:hover { background: rgba(255,255,255,0.08); color: var(--fg); }
+.bottombar .spacer { flex: 1; }
+.bottombar .status { font-size: 11px; padding: 0 6px; opacity: 0.6; }
+.app-root.transparent-bg .bottombar { background: transparent; border-top: none; }
+
 .body { flex: 1; display: flex; min-height: 0; }
 .sidebar {
   width: 180px;

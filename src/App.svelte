@@ -3,6 +3,7 @@
   import { settings, locked, toast, loadSettings, showToast, scheduleSave } from "./lib/store";
   import { api } from "./lib/api";
   import TitleBar from "./components/TitleBar.svelte";
+  import BottomBar from "./components/BottomBar.svelte";
   import Main from "./views/Main.svelte";
   import Settings from "./views/Settings.svelte";
   import Lock from "./views/Lock.svelte";
@@ -98,7 +99,7 @@
   class:transparent-bg={$settings.transparentBg}
   style="--content-opacity: {$settings.transparentBg ? $settings.opacity : 1}; opacity: {$settings.transparentBg ? 1 : $settings.opacity}">
   {#if $settings.showTitleBar}
-    <TitleBar bind:view />
+    <TitleBar />
   {/if}
   <div class="body">
     {#if view === "main"}
@@ -107,6 +108,7 @@
       <Settings onBack={() => (view = "main")} />
     {/if}
   </div>
+  <BottomBar bind:view />
 </div>
 {#if $toast}
   <div class="toast">{$toast}</div>

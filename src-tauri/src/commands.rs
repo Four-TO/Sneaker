@@ -40,6 +40,10 @@ pub async fn apply_window_settings<R: Runtime>(app: AppHandle<R>, state: State<'
     if let Some(w) = get_main(&app) {
         let _ = w.set_always_on_top(settings.always_on_top);
         let _ = w.set_skip_taskbar(settings.skip_taskbar);
+        #[cfg(windows)]
+        if let Ok(h) = w.hwnd() {
+            win_util::apply_tool_window(h.0 as isize, settings.skip_taskbar);
+        }
         apply_passthrough_inner(&w, &settings.passthrough);
         apply_blur(&w, &settings.blur);
     }
@@ -152,7 +156,13 @@ pub async fn set_tray_visible<R: Runtime>(app: AppHandle<R>, state: State<'_, Sh
 #[tauri::command]
 pub async fn set_skip_taskbar<R: Runtime>(app: AppHandle<R>, state: State<'_, Shared>, value: bool) -> Result<(), String> {
     state.settings.lock().skip_taskbar = value;
-    if let Some(w) = get_main(&app) { let _ = w.set_skip_taskbar(value); }
+    if let Some(w) = get_main(&app) {
+        let _ = w.set_skip_taskbar(value);
+        #[cfg(windows)]
+        if let Ok(h) = w.hwnd() {
+            win_util::apply_tool_window(h.0 as isize, value);
+        }
+    }
     let _ = storage::save_settings(&state.settings.lock());
     Ok(())
 }

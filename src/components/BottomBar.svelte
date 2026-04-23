@@ -1,0 +1,54 @@
+<script lang="ts">
+  import { settings, scheduleSave, showToast } from "../lib/store";
+  import { api } from "../lib/api";
+
+  let { view = $bindable() }: { view: "main" | "settings" } = $props();
+
+  async function toggleTop() {
+    const next = !$settings.alwaysOnTop;
+    settings.update((s) => ({ ...s, alwaysOnTop: next }));
+    await api.setAlwaysOnTop(next);
+    scheduleSave();
+    showToast(next ? "已置顶" : "取消置顶");
+  }
+
+  async function togglePassthrough() {
+    const order: Array<"off" | "semi" | "full"> = $settings.showTitleBar ? ["off", "semi", "full"] : ["off", "full"];
+    const i = order.indexOf($settings.passthrough);
+    const next = order[(i + 1) % order.length];
+    settings.update((s) => ({ ...s, passthrough: next }));
+    await api.setPassthrough(next);
+    scheduleSave();
+    showToast(`穿透: ${next === "off" ? "关" : next === "semi" ? "半" : "全"}`);
+  }
+
+  function toggleSidebar() {
+    settings.update((s) => ({ ...s, showSidebar: !s.showSidebar }));
+    scheduleSave();
+  }
+
+  async function lockNow() {
+    if ($settings.hasMasterPassword) await api.lockNow();
+    else showToast("未设置主密码");
+  }
+</script>
+
+<div class="bottombar">
+  {#if view === "main"}
+    <button onclick={toggleSidebar} title={$settings.showSidebar ? "隐藏侧栏" : "显示侧栏"}>
+      {$settings.showSidebar ? "⮜" : "⮞"}
+    </button>
+  {/if}
+  <button onclick={togglePassthrough} title="穿透模式">
+    {$settings.passthrough === "off" ? "●" : $settings.passthrough === "semi" ? "◐" : "○"}
+  </button>
+  <button onclick={toggleTop} title="置顶">{$settings.alwaysOnTop ? "📌" : "📍"}</button>
+  {#if $settings.hasMasterPassword}
+    <button onclick={lockNow} title="立即锁定">🔒</button>
+  {/if}
+  <span class="spacer"></span>
+  <span class="status">{Math.round($settings.opacity * 100)}%</span>
+  <button onclick={() => (view = view === "main" ? "settings" : "main")} title={view === "main" ? "设置" : "返回"}>
+    {view === "main" ? "⚙" : "◀"}
+  </button>
+</div>

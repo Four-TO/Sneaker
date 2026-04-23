@@ -7,6 +7,7 @@ mod hotkeys;
 mod win_util;
 
 use state::AppState;
+#[allow(unused_imports)]
 use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -65,6 +66,10 @@ pub fn run() {
             if let Some(w) = app.get_webview_window("main") {
                 let _ = w.set_always_on_top(s.always_on_top);
                 let _ = w.set_skip_taskbar(s.skip_taskbar);
+                #[cfg(windows)]
+                if let Ok(h) = w.hwnd() {
+                    win_util::apply_tool_window(h.0 as isize, s.skip_taskbar);
+                }
                 commands::apply_passthrough_inner(&w, &s.passthrough);
                 commands::apply_blur(&w, &s.blur);
             }
