@@ -8,6 +8,7 @@
   import Lock from "./views/Lock.svelte";
   import { listen } from "@tauri-apps/api/event";
   import { getCurrentWebview } from "@tauri-apps/api/webview";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
 
   let view: "main" | "settings" = $state("main");
 
@@ -60,6 +61,22 @@
       document.documentElement.setAttribute("data-theme", e.payload.theme);
       document.documentElement.style.setProperty("--bg-solid", e.payload.bgColor);
     });
+
+    // Modifier + left-drag to move window (non-passthrough only)
+    window.addEventListener("mousedown", async (e) => {
+      if (e.button !== 0) return;
+      if ($settings.passthrough === "full") return;
+      const mod = $settings.dragModifier;
+      const pressed =
+        (mod === "Alt" && e.altKey) ||
+        (mod === "Ctrl" && e.ctrlKey) ||
+        (mod === "Shift" && e.shiftKey) ||
+        (mod === "Meta" && e.metaKey);
+      if (!pressed) return;
+      e.preventDefault();
+      e.stopPropagation();
+      try { await getCurrentWindow().startDragging(); } catch {}
+    }, true);
 
     // Hide context menu in production
     document.addEventListener("contextmenu", (e) => {

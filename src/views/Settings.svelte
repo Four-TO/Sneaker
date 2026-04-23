@@ -189,6 +189,14 @@
   <div class="row"><label>显示托盘图标</label>
     <input type="checkbox" checked={$settings.showTrayIcon} onchange={(e) => applyTray((e.currentTarget as HTMLInputElement).checked)} />
   </div>
+  <div class="row"><label>拖动修饰键 <span class="hint">(按住此键+左键可在任意处拖动窗口)</span></label>
+    <select value={$settings.dragModifier} onchange={(e) => { const v = (e.currentTarget as HTMLSelectElement).value as any; settings.update(s => ({ ...s, dragModifier: v })); scheduleSave(); }}>
+      <option value="Alt">Alt</option>
+      <option value="Ctrl">Ctrl</option>
+      <option value="Shift">Shift</option>
+      <option value="Meta">Win</option>
+    </select>
+  </div>
 
   <h2>全局快捷键 {capturing ? `(按下组合键为 ${capturing} 赋值，Esc 取消)` : ""}</h2>
   <div class="row"><label>恢复默认</label>

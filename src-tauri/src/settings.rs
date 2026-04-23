@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 fn default_true() -> bool { true }
+fn default_drag_mod() -> String { "Alt".into() }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -45,6 +46,8 @@ pub struct Settings {
     pub show_sidebar: bool,
     #[serde(default)]
     pub transparent_bg: bool,
+    #[serde(default = "default_drag_mod")]
+    pub drag_modifier: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub master_hash: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -78,6 +81,7 @@ impl Default for Settings {
             notes_dir: String::new(),
             show_sidebar: true,
             transparent_bg: false,
+            drag_modifier: "Alt".into(),
             master_hash: None,
             master_salt: None,
             window_x: None,

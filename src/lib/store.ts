@@ -30,6 +30,7 @@ export interface Settings {
   notesDir: string;
   showSidebar: boolean;
   transparentBg: boolean;
+  dragModifier: "Alt" | "Ctrl" | "Shift" | "Meta";
 }
 
 export const defaultHotkeys: Hotkey = {
@@ -57,6 +58,7 @@ export const defaultSettings: Settings = {
   notesDir: "",
   showSidebar: true,
   transparentBg: false,
+  dragModifier: "Alt",
 };
 
 export const settings = writable<Settings>({ ...defaultSettings });
