@@ -94,8 +94,10 @@ pub fn on_shortcut<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
     };
     if matches(&s.hotkeys.toggle_show) {
         if let Some(w) = app.get_webview_window("main") {
-            if w.is_visible().unwrap_or(false) { let _ = w.hide(); }
-            else { let _ = w.show(); let _ = w.set_focus(); }
+            let minimized = w.is_minimized().unwrap_or(false);
+            let visible = w.is_visible().unwrap_or(false);
+            if visible && !minimized { let _ = w.hide(); }
+            else { let _ = w.unminimize(); let _ = w.show(); let _ = w.set_focus(); }
         }
     } else if matches(&s.hotkeys.toggle_top) {
         let mut s = state.settings.lock();
@@ -124,6 +126,7 @@ pub fn on_shortcut<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
         }
     } else if matches(&s.hotkeys.quick_capture) {
         if let Some(w) = app.get_webview_window("main") {
+            let _ = w.unminimize();
             let _ = w.show();
             let _ = w.set_focus();
         }

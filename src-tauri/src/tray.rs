@@ -38,9 +38,12 @@ pub fn build_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
             {
                 let app = tray.app_handle().clone();
                 if let Some(w) = app.get_webview_window("main") {
-                    if w.is_visible().unwrap_or(false) {
+                    let minimized = w.is_minimized().unwrap_or(false);
+                    let visible = w.is_visible().unwrap_or(false);
+                    if visible && !minimized {
                         let _ = w.hide();
                     } else {
+                        let _ = w.unminimize();
                         let _ = w.show();
                         let _ = w.set_focus();
                     }
@@ -55,7 +58,7 @@ pub fn build_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
 fn handle_menu<R: Runtime>(app: &AppHandle<R>, id: &str) {
     let state: tauri::State<Shared> = app.state();
     match id {
-        "show" => { if let Some(w) = app.get_webview_window("main") { let _ = w.show(); let _ = w.set_focus(); } }
+        "show" => { if let Some(w) = app.get_webview_window("main") { let _ = w.unminimize(); let _ = w.show(); let _ = w.set_focus(); } }
         "hide" => { if let Some(w) = app.get_webview_window("main") { let _ = w.hide(); } }
         "top" => {
             let mut s = state.settings.lock();
@@ -68,7 +71,7 @@ fn handle_menu<R: Runtime>(app: &AppHandle<R>, id: &str) {
         "pt_semi" => set_pt(app, "semi"),
         "pt_full" => set_pt(app, "full"),
         "settings" => {
-            if let Some(w) = app.get_webview_window("main") { let _ = w.show(); let _ = w.set_focus(); }
+            if let Some(w) = app.get_webview_window("main") { let _ = w.unminimize(); let _ = w.show(); let _ = w.set_focus(); }
             let _ = app.emit("view-change", "settings");
         }
         "lock" => {

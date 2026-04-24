@@ -314,9 +314,12 @@ pub async fn pause_hotkeys<R: Runtime>(app: AppHandle<R>) -> Result<(), String> 
 #[tauri::command]
 pub fn toggle_main<R: Runtime>(app: AppHandle<R>) -> Result<(), String> {
     if let Some(w) = get_main(&app) {
-        if w.is_visible().unwrap_or(false) {
+        let minimized = w.is_minimized().unwrap_or(false);
+        let visible = w.is_visible().unwrap_or(false);
+        if visible && !minimized {
             let _ = w.hide();
         } else {
+            let _ = w.unminimize();
             let _ = w.show();
             let _ = w.set_focus();
         }
