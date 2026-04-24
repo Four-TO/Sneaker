@@ -12,7 +12,7 @@
   import { getCurrentWebview } from "@tauri-apps/api/webview";
   import { getCurrentWindow } from "@tauri-apps/api/window";
 
-  let view: "main" | "tasks" | "settings" = $state("main");
+  let view: "main" | "tasks" | "settings" = $state("tasks");
 
   onMount(async () => {
     await loadSettings();
