@@ -2,7 +2,7 @@
   import { settings, scheduleSave, showToast } from "../lib/store";
   import { api } from "../lib/api";
 
-  let { view = $bindable() }: { view: "main" | "settings" } = $props();
+  let { view = $bindable() }: { view: "main" | "tasks" | "settings" } = $props();
 
   async function toggleTop() {
     const next = !$settings.alwaysOnTop;
@@ -34,6 +34,8 @@
 </script>
 
 <div class="bottombar">
+  <button class:active={view === "main"} onclick={() => (view = "main")} title="笔记 (Ctrl+1)">📝</button>
+  <button class:active={view === "tasks"} onclick={() => (view = "tasks")} title="任务 (Ctrl+2)">📋</button>
   {#if view === "main"}
     <button onclick={toggleSidebar} title={($settings.showSidebar ? "隐藏" : "显示") + "侧栏 (Ctrl+B)"}>
       {$settings.showSidebar ? "⮜" : "☰"}
@@ -48,7 +50,7 @@
   {/if}
   <span class="spacer"></span>
   <span class="status">{Math.round($settings.opacity * 100)}%</span>
-  <button onclick={() => (view = view === "main" ? "settings" : "main")} title={view === "main" ? "设置" : "返回"}>
-    {view === "main" ? "⚙" : "◀"}
+  <button class:active={view === "settings"} onclick={() => (view = view === "settings" ? "main" : "settings")} title="设置 (Ctrl+,)">
+    ⚙
   </button>
 </div>

@@ -9,6 +9,25 @@ export interface NoteMeta {
   modified: number;
 }
 
+export interface Task {
+  id: string;
+  title: string;
+  notes: string;
+  status: "todo" | "working" | "done";
+  pinned: boolean;
+  createdAt: number;
+  completedAt?: number;
+  order: number;
+}
+
+export interface TaskPatch {
+  title?: string;
+  notes?: string;
+  status?: "todo" | "working" | "done";
+  pinned?: boolean;
+  order?: number;
+}
+
 export const api = {
   applyWindow: (s: Settings) => invoke("apply_window_settings", { settings: s }),
   applyHotkeys: (s: Settings) => invoke("apply_hotkeys", { settings: s }),
@@ -41,4 +60,10 @@ export const api = {
   bossHide: () => invoke("boss_hide"),
   toggleMain: () => invoke("toggle_main"),
   pauseHotkeys: () => invoke("pause_hotkeys"),
+
+  listTasks: () => invoke<Task[]>("list_tasks"),
+  createTask: (title: string) => invoke<Task>("create_task", { title }),
+  updateTask: (id: string, patch: TaskPatch) => invoke<Task>("update_task", { id, patch }),
+  deleteTask: (id: string) => invoke("delete_task", { id }),
+  toggleTask: (id: string) => invoke<Task>("toggle_task", { id }),
 };

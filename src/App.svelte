@@ -5,13 +5,14 @@
   import TitleBar from "./components/TitleBar.svelte";
   import BottomBar from "./components/BottomBar.svelte";
   import Main from "./views/Main.svelte";
+  import Tasks from "./views/Tasks.svelte";
   import Settings from "./views/Settings.svelte";
   import Lock from "./views/Lock.svelte";
   import { listen } from "@tauri-apps/api/event";
   import { getCurrentWebview } from "@tauri-apps/api/webview";
   import { getCurrentWindow } from "@tauri-apps/api/window";
 
-  let view: "main" | "settings" = $state("main");
+  let view: "main" | "tasks" | "settings" = $state("main");
 
   onMount(async () => {
     await loadSettings();
@@ -79,13 +80,33 @@
       try { await getCurrentWindow().startDragging(); } catch {}
     }, true);
 
-    // Ctrl+B toggle sidebar
+    // Local keyboard shortcuts
     window.addEventListener("keydown", (e) => {
-      if (e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey && (e.key === "b" || e.key === "B")) {
+      if (!e.ctrlKey || e.altKey || e.metaKey) return;
+      const k = e.key.toLowerCase();
+      if (k === "b" && !e.shiftKey) {
         e.preventDefault();
         settings.update((s) => ({ ...s, showSidebar: !s.showSidebar }));
         scheduleSave();
+      } else if (k === "1" && !e.shiftKey) {
+        e.preventDefault(); view = "main";
+      } else if (k === "2" && !e.shiftKey) {
+        e.preventDefault(); view = "tasks";
+      } else if (k === "," && !e.shiftKey) {
+        e.preventDefault(); view = "settings";
+      } else if (k === "n" && !e.shiftKey) {
+        const tag = (e.target as HTMLElement)?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        e.preventDefault();
+        if (view === "tasks") {
+          setTimeout(() => document.getElementById("new-task-input")?.focus(), 30);
+        }
       }
+    });
+
+    await listen("focus-new-task", () => {
+      view = "tasks";
+      setTimeout(() => document.getElementById("new-task-input")?.focus(), 50);
     });
 
     // Hide context menu in production
@@ -113,6 +134,8 @@
   <div class="body">
     {#if view === "main"}
       <Main />
+    {:else if view === "tasks"}
+      <Tasks />
     {:else}
       <Settings onBack={() => (view = "main")} />
     {/if}

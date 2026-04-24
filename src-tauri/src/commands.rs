@@ -1,6 +1,7 @@
 use crate::settings::Settings;
 use crate::state::Shared;
 use crate::storage;
+use crate::tasks;
 use crate::tray;
 use crate::hotkeys;
 use crate::win_util;
@@ -278,6 +279,30 @@ pub fn boss_hide<R: Runtime>(app: AppHandle<R>, state: State<'_, Shared>) -> Res
         let _ = app.emit("locked", ());
     }
     Ok(())
+}
+
+// Tasks
+#[tauri::command]
+pub fn list_tasks() -> Vec<tasks::Task> { tasks::load_all() }
+
+#[tauri::command]
+pub fn create_task(title: String) -> Result<tasks::Task, String> {
+    tasks::create(&title).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn update_task(id: String, patch: tasks::TaskPatch) -> Result<tasks::Task, String> {
+    tasks::update(&id, patch).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn delete_task(id: String) -> Result<(), String> {
+    tasks::delete(&id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn toggle_task(id: String) -> Result<tasks::Task, String> {
+    tasks::toggle(&id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]

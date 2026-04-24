@@ -1,5 +1,6 @@
 mod settings;
 mod storage;
+mod tasks;
 mod state;
 mod commands;
 mod tray;
@@ -59,6 +60,11 @@ pub fn run() {
             commands::boss_hide,
             commands::toggle_main,
             commands::pause_hotkeys,
+            commands::list_tasks,
+            commands::create_task,
+            commands::update_task,
+            commands::delete_task,
+            commands::toggle_task,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();

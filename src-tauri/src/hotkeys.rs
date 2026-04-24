@@ -127,6 +127,7 @@ pub fn on_shortcut<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
             let _ = w.show();
             let _ = w.set_focus();
         }
+        let _ = app.emit("focus-new-task", ());
     }
 }
 
