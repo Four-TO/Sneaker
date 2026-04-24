@@ -30,7 +30,7 @@ export interface TaskPatch {
 
 export const api = {
   applyWindow: (s: Settings) => invoke("apply_window_settings", { settings: s }),
-  applyHotkeys: (s: Settings) => invoke("apply_hotkeys", { settings: s }),
+  applyHotkeys: (s: Settings) => invoke<string[]>("apply_hotkeys", { settings: s }),
   setOpacity: (v: number) => invoke("set_opacity", { value: v }),
   setAlwaysOnTop: (v: boolean) => invoke("set_always_on_top", { value: v }),
   setPassthrough: (mode: string) => invoke("set_passthrough", { mode }),

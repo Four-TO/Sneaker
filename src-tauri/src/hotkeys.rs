@@ -62,25 +62,37 @@ fn map_code(k: &str) -> Option<Code> {
     })
 }
 
-pub fn register_all<R: Runtime>(app: &AppHandle<R>, s: &Settings) -> bool {
+/// Returns list of "field:reason" for failed registrations. Empty = all ok.
+pub fn register_all<R: Runtime>(app: &AppHandle<R>, s: &Settings) -> Vec<String> {
     let gs = app.global_shortcut();
     let _ = gs.unregister_all();
-    let mut all_ok = true;
+    // Give Windows a moment to actually unhook the hotkeys before re-registering.
+    std::thread::sleep(std::time::Duration::from_millis(30));
+    let mut failed = Vec::new();
     let specs = [
-        (s.hotkeys.toggle_show.clone(), "toggle_show"),
-        (s.hotkeys.toggle_top.clone(), "toggle_top"),
-        (s.hotkeys.toggle_passthrough.clone(), "toggle_passthrough"),
-        (s.hotkeys.boss_key.clone(), "boss"),
-        (s.hotkeys.quick_capture.clone(), "quick_capture"),
+        (s.hotkeys.toggle_show.clone(), "toggleShow"),
+        (s.hotkeys.toggle_top.clone(), "toggleTop"),
+        (s.hotkeys.toggle_passthrough.clone(), "togglePassthrough"),
+        (s.hotkeys.boss_key.clone(), "bossKey"),
+        (s.hotkeys.quick_capture.clone(), "quickCapture"),
     ];
-    for (combo, _label) in specs.iter() {
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for (combo, label) in specs.iter() {
         if combo.is_empty() { continue; }
+        if !seen.insert(combo.clone()) {
+            failed.push(format!("{}|{}|与其它项重复", label, combo));
+            continue;
+        }
         match parse_shortcut(combo) {
-            Some(sc) => { if gs.register(sc).is_err() { all_ok = false; } }
-            None => all_ok = false,
+            Some(sc) => {
+                if gs.register(sc).is_err() {
+                    failed.push(format!("{}|{}|被占用或无效", label, combo));
+                }
+            }
+            None => failed.push(format!("{}|{}|无法解析", label, combo)),
         }
     }
-    all_ok
+    failed
 }
 
 pub fn on_shortcut<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {

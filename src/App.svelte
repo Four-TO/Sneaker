@@ -19,7 +19,11 @@
     document.documentElement.setAttribute("data-theme", $settings.theme);
     document.documentElement.style.setProperty("--bg-solid", $settings.bgColor);
     await api.applyWindow($settings);
-    await api.applyHotkeys($settings);
+    const failed = await api.applyHotkeys($settings);
+    if (failed.length) {
+      const list = failed.map(f => { const p = f.split("|"); return `${p[1]}(${p[2]})`; }).join("，");
+      showToast(`热键冲突：${list}`, 4000);
+    }
 
     const l = await api.isLocked();
     locked.set(l);

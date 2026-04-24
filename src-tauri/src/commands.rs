@@ -54,7 +54,7 @@ pub async fn apply_window_settings<R: Runtime>(app: AppHandle<R>, state: State<'
 }
 
 #[tauri::command]
-pub async fn apply_hotkeys<R: Runtime>(app: AppHandle<R>, state: State<'_, Shared>, settings: Settings) -> Result<bool, String> {
+pub async fn apply_hotkeys<R: Runtime>(app: AppHandle<R>, state: State<'_, Shared>, settings: Settings) -> Result<Vec<String>, String> {
     {
         let mut s = state.settings.lock();
         *s = settings.clone();

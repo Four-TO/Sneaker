@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { settings, scheduleSave, showToast, defaultHotkeys } from "../lib/store";
   import { api } from "../lib/api";
 
@@ -8,6 +9,20 @@
   let masterNew = $state("");
   let masterNew2 = $state("");
   let capturing = $state<string | null>(null);
+  let hkFailed = $state<Record<string, string>>({});
+
+  function updateFailedFromList(failed: string[]) {
+    const m: Record<string, string> = {};
+    for (const f of failed) {
+      const [field, , reason] = f.split("|");
+      if (field) m[field] = reason || "失败";
+    }
+    hkFailed = m;
+  }
+
+  onMount(async () => {
+    try { updateFailedFromList(await api.applyHotkeys($settings)); } catch {}
+  });
 
   async function applyOpacity(v: number) {
     settings.update((s) => ({ ...s, opacity: v }));
@@ -70,19 +85,32 @@
 
   async function captureKey(field: keyof typeof $settings.hotkeys) {
     capturing = field;
+    const oldVal = $settings.hotkeys[field];
     await api.pauseHotkeys();
     showToast("按下组合键… (Esc 取消)");
-    const finish = (combo: string | null) => {
-      if (combo) {
-        settings.update((s) => ({ ...s, hotkeys: { ...s.hotkeys, [field]: combo } }));
-        scheduleSave();
-      }
-      api.applyHotkeys($settings).then((ok) => {
-        if (combo && !ok) showToast("热键注册失败，可能冲突");
-        else if (combo) showToast(`已设置 ${combo}`);
-      }).catch(() => showToast("热键注册失败"));
+    const finish = async (combo: string | null) => {
       window.removeEventListener("keydown", handler, true);
       capturing = null;
+      if (combo) {
+        settings.update((s) => ({ ...s, hotkeys: { ...s.hotkeys, [field]: combo } }));
+      }
+      scheduleSave();
+      try {
+        let failed = await api.applyHotkeys($settings);
+        const mine = failed.find(f => f.startsWith(field + "|"));
+        if (mine) {
+          const reason = mine.split("|")[2] ?? "未知原因";
+          settings.update((s) => ({ ...s, hotkeys: { ...s.hotkeys, [field]: oldVal } }));
+          scheduleSave();
+          failed = await api.applyHotkeys($settings);
+          showToast(`${combo} 注册失败：${reason}，已回滚`);
+        } else if (combo) {
+          showToast(`已设置 ${combo}`);
+        }
+        updateFailedFromList(failed);
+      } catch (e) {
+        showToast(`热键注册失败: ${e}`);
+      }
     };
     const handler = (e: KeyboardEvent) => {
       e.preventDefault();
@@ -106,8 +134,10 @@
   async function restoreHotkeys() {
     settings.update((s) => ({ ...s, hotkeys: { ...defaultHotkeys } }));
     scheduleSave();
-    const ok = await api.applyHotkeys($settings);
-    showToast(ok ? "已恢复默认快捷键" : "恢复默认但注册失败");
+    const failed = await api.applyHotkeys($settings);
+    updateFailedFromList(failed);
+    if (failed.length === 0) showToast("已恢复默认快捷键");
+    else showToast(`默认已应用，${failed.length} 项被占用：${failed.map(f => f.split("|")[1]).join(", ")}`);
   }
 
   async function toggleTransparentBg(v: boolean) {
@@ -207,19 +237,24 @@
     <button class="ghost" onclick={restoreHotkeys}>重置全部</button>
   </div>
   <div class="row"><label>显隐主窗</label>
-    <button class="ghost" onclick={() => captureKey("toggleShow")}>{$settings.hotkeys.toggleShow}</button>
+    <button class="ghost" class:hk-fail={hkFailed.toggleShow} onclick={() => captureKey("toggleShow")}>{$settings.hotkeys.toggleShow}</button>
+    {#if hkFailed.toggleShow}<span class="hk-err">❌ {hkFailed.toggleShow}</span>{/if}
   </div>
   <div class="row"><label>切置顶</label>
-    <button class="ghost" onclick={() => captureKey("toggleTop")}>{$settings.hotkeys.toggleTop}</button>
+    <button class="ghost" class:hk-fail={hkFailed.toggleTop} onclick={() => captureKey("toggleTop")}>{$settings.hotkeys.toggleTop}</button>
+    {#if hkFailed.toggleTop}<span class="hk-err">❌ {hkFailed.toggleTop}</span>{/if}
   </div>
   <div class="row"><label>切穿透</label>
-    <button class="ghost" onclick={() => captureKey("togglePassthrough")}>{$settings.hotkeys.togglePassthrough}</button>
+    <button class="ghost" class:hk-fail={hkFailed.togglePassthrough} onclick={() => captureKey("togglePassthrough")}>{$settings.hotkeys.togglePassthrough}</button>
+    {#if hkFailed.togglePassthrough}<span class="hk-err">❌ {hkFailed.togglePassthrough}</span>{/if}
   </div>
   <div class="row"><label>老板键（隐藏并锁定）</label>
-    <button class="ghost" onclick={() => captureKey("bossKey")}>{$settings.hotkeys.bossKey}</button>
+    <button class="ghost" class:hk-fail={hkFailed.bossKey} onclick={() => captureKey("bossKey")}>{$settings.hotkeys.bossKey}</button>
+    {#if hkFailed.bossKey}<span class="hk-err">❌ {hkFailed.bossKey}</span>{/if}
   </div>
   <div class="row"><label>快速捕获</label>
-    <button class="ghost" onclick={() => captureKey("quickCapture")}>{$settings.hotkeys.quickCapture}</button>
+    <button class="ghost" class:hk-fail={hkFailed.quickCapture} onclick={() => captureKey("quickCapture")}>{$settings.hotkeys.quickCapture}</button>
+    {#if hkFailed.quickCapture}<span class="hk-err">❌ {hkFailed.quickCapture}</span>{/if}
   </div>
 
   <h2>安全</h2>

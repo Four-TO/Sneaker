@@ -236,6 +236,8 @@ body { user-select: none; }
   color: var(--fg);
 }
 .settings .row .hint { color: var(--fg-dim); font-size: 11px; }
+.settings .row button.hk-fail { border-color: var(--danger); color: var(--danger); }
+.settings .row .hk-err { color: var(--danger); font-size: 11px; }
 
 .lock-overlay {
   position: fixed;
