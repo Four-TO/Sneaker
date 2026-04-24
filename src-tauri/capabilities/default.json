@@ -22,6 +22,7 @@
     "global-shortcut:default",
     "dialog:default",
     "fs:default",
-    "autostart:default"
+    "autostart:default",
+    "window-state:default"
   ]
 }

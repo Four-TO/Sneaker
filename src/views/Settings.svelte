@@ -15,7 +15,11 @@
     scheduleSave();
   }
   async function applyTheme(v: "dark" | "light") {
-    settings.update((s) => ({ ...s, theme: v }));
+    const defaultBg = v === "dark" ? "#14161e" : "#f8f9fc";
+    settings.update((s) => {
+      const isDefault = s.bgColor === "#14161e" || s.bgColor === "#f8f9fc" || !s.bgColor;
+      return { ...s, theme: v, bgColor: isDefault ? defaultBg : s.bgColor };
+    });
     scheduleSave();
   }
   async function applyBg(v: string) {
