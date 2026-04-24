@@ -1,7 +1,7 @@
 use crate::state::Shared;
 use tauri::{
     menu::{Menu, MenuItem, PredefinedMenuItem, CheckMenuItem, Submenu},
-    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
     AppHandle, Emitter, Manager, Runtime,
 };
 
@@ -27,26 +27,20 @@ pub fn build_tray<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
             tauri::image::Image::new(&[], 0, 0)
         }))
         .menu(&menu)
+        .show_menu_on_left_click(false)
         .tooltip("Sneaker")
         .on_menu_event(move |app, event| handle_menu(app, event.id.as_ref()))
         .on_tray_icon_event(move |tray, event| {
-            if let TrayIconEvent::Click {
+            if let TrayIconEvent::DoubleClick {
                 button: MouseButton::Left,
-                button_state: MouseButtonState::Up,
                 ..
             } = event
             {
                 let app = tray.app_handle().clone();
                 if let Some(w) = app.get_webview_window("main") {
-                    let minimized = w.is_minimized().unwrap_or(false);
-                    let visible = w.is_visible().unwrap_or(false);
-                    if visible && !minimized {
-                        let _ = w.hide();
-                    } else {
-                        let _ = w.unminimize();
-                        let _ = w.show();
-                        let _ = w.set_focus();
-                    }
+                    let _ = w.unminimize();
+                    let _ = w.show();
+                    let _ = w.set_focus();
                 }
             }
         })
