@@ -56,7 +56,7 @@ export const defaultSettings: Settings = {
   hasMasterPassword: false,
   hotkeys: { ...defaultHotkeys },
   notesDir: "",
-  showSidebar: true,
+  showSidebar: false,
   transparentBg: false,
   dragModifier: "Alt",
 };

@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-fn default_true() -> bool { true }
 fn default_drag_mod() -> String { "Alt".into() }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,7 +41,7 @@ pub struct Settings {
     pub has_master_password: bool,
     pub hotkeys: Hotkeys,
     pub notes_dir: String,
-    #[serde(default = "default_true")]
+    #[serde(default)]
     pub show_sidebar: bool,
     #[serde(default)]
     pub transparent_bg: bool,
@@ -79,7 +78,7 @@ impl Default for Settings {
             has_master_password: false,
             hotkeys: Hotkeys::default(),
             notes_dir: String::new(),
-            show_sidebar: true,
+            show_sidebar: false,
             transparent_bg: false,
             drag_modifier: "Alt".into(),
             master_hash: None,

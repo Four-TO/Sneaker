@@ -35,8 +35,8 @@
 
 <div class="bottombar">
   {#if view === "main"}
-    <button onclick={toggleSidebar} title={$settings.showSidebar ? "隐藏侧栏" : "显示侧栏"}>
-      {$settings.showSidebar ? "⮜" : "⮞"}
+    <button onclick={toggleSidebar} title={($settings.showSidebar ? "隐藏" : "显示") + "侧栏 (Ctrl+B)"}>
+      {$settings.showSidebar ? "⮜" : "☰"}
     </button>
   {/if}
   <button onclick={togglePassthrough} title="穿透模式">

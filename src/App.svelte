@@ -79,6 +79,15 @@
       try { await getCurrentWindow().startDragging(); } catch {}
     }, true);
 
+    // Ctrl+B toggle sidebar
+    window.addEventListener("keydown", (e) => {
+      if (e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey && (e.key === "b" || e.key === "B")) {
+        e.preventDefault();
+        settings.update((s) => ({ ...s, showSidebar: !s.showSidebar }));
+        scheduleSave();
+      }
+    });
+
     // Hide context menu in production
     document.addEventListener("contextmenu", (e) => {
       const t = e.target as HTMLElement;
