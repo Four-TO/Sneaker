@@ -112,19 +112,39 @@
         showToast(`热键注册失败: ${e}`);
       }
     };
+    const codeToLabel: Record<string, string> = {
+      Comma: ",", Period: ".", Slash: "/", Backslash: "\\",
+      Semicolon: ";", Quote: "'", Backquote: "`",
+      Minus: "-", Equal: "=",
+      BracketLeft: "[", BracketRight: "]",
+      Space: "Space", Enter: "Enter", Escape: "Esc", Tab: "Tab",
+      Backspace: "Backspace", Delete: "Delete", Insert: "Insert",
+      Home: "Home", End: "End", PageUp: "PageUp", PageDown: "PageDown",
+      ArrowUp: "Up", ArrowDown: "Down", ArrowLeft: "Left", ArrowRight: "Right",
+    };
+    const labelFromCode = (code: string): string | null => {
+      if (code.startsWith("Key")) return code.slice(3);
+      if (code.startsWith("Digit")) return code.slice(5);
+      if (/^F\d+$/.test(code)) return code;
+      return codeToLabel[code] ?? null;
+    };
     const handler = (e: KeyboardEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if (e.key === "Escape") { finish(null); return; }
+      if (e.key === "Escape" && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) {
+        finish(null); return;
+      }
       if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) return;
       const parts: string[] = [];
       if (e.ctrlKey) parts.push("Ctrl");
       if (e.altKey) parts.push("Alt");
       if (e.shiftKey) parts.push("Shift");
       if (e.metaKey) parts.push("Meta");
-      let k = e.key;
-      if (k.length === 1) k = k.toUpperCase();
-      if (k === " ") k = "Space";
+      const k = labelFromCode(e.code);
+      if (!k) {
+        showToast(`不支持的按键: ${e.code}`);
+        return;
+      }
       parts.push(k);
       finish(parts.join("+"));
     };

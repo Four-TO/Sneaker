@@ -36,6 +36,17 @@ fn map_code(k: &str) -> Option<Code> {
             '3' => Code::Digit3, '4' => Code::Digit4, '5' => Code::Digit5,
             '6' => Code::Digit6, '7' => Code::Digit7, '8' => Code::Digit8,
             '9' => Code::Digit9,
+            ',' | '<' => Code::Comma,
+            '.' | '>' => Code::Period,
+            '/' | '?' => Code::Slash,
+            '\\' | '|' => Code::Backslash,
+            ';' | ':' => Code::Semicolon,
+            '\'' | '"' => Code::Quote,
+            '`' | '~' => Code::Backquote,
+            '-' | '_' => Code::Minus,
+            '=' | '+' => Code::Equal,
+            '[' | '{' => Code::BracketLeft,
+            ']' | '}' => Code::BracketRight,
             _ => return None,
         });
     }
