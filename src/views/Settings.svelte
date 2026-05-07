@@ -276,6 +276,10 @@
     <button class="ghost" class:hk-fail={hkFailed.quickCapture} onclick={() => captureKey("quickCapture")}>{$settings.hotkeys.quickCapture}</button>
     {#if hkFailed.quickCapture}<span class="hk-err">❌ {hkFailed.quickCapture}</span>{/if}
   </div>
+  <div class="row"><label>显隐标题/底栏</label>
+    <button class="ghost" class:hk-fail={hkFailed.toggleChrome} onclick={() => captureKey("toggleChrome")}>{$settings.hotkeys.toggleChrome}</button>
+    {#if hkFailed.toggleChrome}<span class="hk-err">❌ {hkFailed.toggleChrome}</span>{/if}
+  </div>
 
   <h2>安全</h2>
   <div class="row"><label>当前状态</label>

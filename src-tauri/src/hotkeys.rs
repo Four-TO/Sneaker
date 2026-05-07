@@ -86,6 +86,7 @@ pub fn register_all<R: Runtime>(app: &AppHandle<R>, s: &Settings) -> Vec<String>
         (s.hotkeys.toggle_passthrough.clone(), "togglePassthrough"),
         (s.hotkeys.boss_key.clone(), "bossKey"),
         (s.hotkeys.quick_capture.clone(), "quickCapture"),
+        (s.hotkeys.toggle_chrome.clone(), "toggleChrome"),
     ];
     let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     for (combo, label) in specs.iter() {
@@ -147,6 +148,14 @@ pub fn on_shortcut<R: Runtime>(app: &AppHandle<R>, shortcut: &Shortcut) {
             *state.locked.lock() = true;
             let _ = app.emit("locked", ());
         }
+    } else if matches(&s.hotkeys.toggle_chrome) {
+        let mut s = state.settings.lock();
+        let target = !(s.show_title_bar || s.show_bottom_bar);
+        s.show_title_bar = target;
+        s.show_bottom_bar = target;
+        if !target && s.passthrough == "semi" { s.passthrough = "off".into(); }
+        let _ = crate::storage::save_settings(&s);
+        let _ = app.emit("settings-updated", &*s);
     } else if matches(&s.hotkeys.quick_capture) {
         if let Some(w) = app.get_webview_window("main") {
             let _ = w.unminimize();

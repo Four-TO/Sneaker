@@ -144,7 +144,9 @@
       <Settings onBack={() => (view = "main")} />
     {/if}
   </div>
-  <BottomBar bind:view />
+  {#if $settings.showBottomBar}
+    <BottomBar bind:view />
+  {/if}
 </div>
 {#if $toast}
   <div class="toast">{$toast}</div>

@@ -11,6 +11,7 @@ export interface Hotkey {
   togglePassthrough: string;
   bossKey: string;
   quickCapture: string;
+  toggleChrome: string;
 }
 
 export interface Settings {
@@ -29,6 +30,7 @@ export interface Settings {
   hotkeys: Hotkey;
   notesDir: string;
   showSidebar: boolean;
+  showBottomBar: boolean;
   transparentBg: boolean;
   dragModifier: "Alt" | "Ctrl" | "Shift" | "Meta";
 }
@@ -39,6 +41,7 @@ export const defaultHotkeys: Hotkey = {
   togglePassthrough: "Ctrl+Alt+P",
   bossKey: "Ctrl+Alt+H",
   quickCapture: "Ctrl+Alt+Q",
+  toggleChrome: "Ctrl+Alt+B",
 };
 
 export const defaultSettings: Settings = {
@@ -57,6 +60,7 @@ export const defaultSettings: Settings = {
   hotkeys: { ...defaultHotkeys },
   notesDir: "",
   showSidebar: false,
+  showBottomBar: true,
   transparentBg: false,
   dragModifier: "Alt",
 };

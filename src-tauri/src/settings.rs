@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 fn default_drag_mod() -> String { "Alt".into() }
+fn default_true() -> bool { true }
+fn default_toggle_chrome() -> String { "Ctrl+Alt+B".into() }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -10,6 +12,8 @@ pub struct Hotkeys {
     pub toggle_passthrough: String,
     pub boss_key: String,
     pub quick_capture: String,
+    #[serde(default = "default_toggle_chrome")]
+    pub toggle_chrome: String,
 }
 
 impl Default for Hotkeys {
@@ -20,6 +24,7 @@ impl Default for Hotkeys {
             toggle_passthrough: "Ctrl+Alt+P".into(),
             boss_key: "Ctrl+Alt+H".into(),
             quick_capture: "Ctrl+Alt+Q".into(),
+            toggle_chrome: "Ctrl+Alt+B".into(),
         }
     }
 }
@@ -43,6 +48,8 @@ pub struct Settings {
     pub notes_dir: String,
     #[serde(default)]
     pub show_sidebar: bool,
+    #[serde(default = "default_true")]
+    pub show_bottom_bar: bool,
     #[serde(default)]
     pub transparent_bg: bool,
     #[serde(default = "default_drag_mod")]
@@ -79,6 +86,7 @@ impl Default for Settings {
             hotkeys: Hotkeys::default(),
             notes_dir: String::new(),
             show_sidebar: false,
+            show_bottom_bar: true,
             transparent_bg: false,
             drag_modifier: "Alt".into(),
             master_hash: None,
