@@ -29,6 +29,16 @@
     return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
   }
 
+  function fmtDate(ts?: number): string {
+    if (!ts) return "";
+    const d = new Date(ts * 1000);
+    const n = new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    if (d.getFullYear() !== n.getFullYear()) return `${d.getFullYear()}-${mm}-${dd}`;
+    return `${mm}-${dd}`;
+  }
+
   async function refresh() {
     try { tasks = await api.listTasks(); } catch (e) { showToast(`载入失败: ${e}`); }
   }
@@ -174,8 +184,9 @@
       <span class="title" ondblclick={() => startEdit(t)}>{t.title}</span>
     {/if}
 
+    <span class="time" title="创建于 {fmtDate(t.createdAt)} {fmtTime(t.createdAt)}">📅 {fmtDate(t.createdAt)}</span>
     {#if t.status === "done"}
-      <span class="time">{fmtTime(t.completedAt)}</span>
+      <span class="time" title="完成于 {fmtDate(t.completedAt)} {fmtTime(t.completedAt)}">✓ {fmtDate(t.completedAt)} {fmtTime(t.completedAt)}</span>
     {/if}
 
     <span class="actions">
