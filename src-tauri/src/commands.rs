@@ -21,22 +21,30 @@ pub fn load_settings(state: State<Shared>) -> Settings {
     state.settings.lock().clone()
 }
 
+// Replace state.settings with a payload coming from the frontend, but never
+// trust the frontend to round-trip the master-password fields: they are the
+// backend's authoritative state and must be preserved against accidental
+// stomping (any save_settings call right after set_master_password would
+// otherwise overwrite the freshly stored hash with an undefined frontend value).
+fn apply_frontend_settings(state: &State<Shared>, mut incoming: Settings) -> Settings {
+    let mut s = state.settings.lock();
+    incoming.master_hash = s.master_hash.clone();
+    incoming.master_salt = s.master_salt.clone();
+    incoming.has_master_password = s.has_master_password;
+    *s = incoming.clone();
+    incoming
+}
+
 #[tauri::command]
 pub fn save_settings(state: State<Shared>, settings: Settings) -> Result<(), String> {
-    {
-        let mut s = state.settings.lock();
-        *s = settings.clone();
-    }
-    storage::save_settings(&settings).map_err(|e| e.to_string())?;
+    let merged = apply_frontend_settings(&state, settings);
+    storage::save_settings(&merged).map_err(|e| e.to_string())?;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn apply_window_settings<R: Runtime>(app: AppHandle<R>, state: State<'_, Shared>, settings: Settings) -> Result<(), String> {
-    {
-        let mut s = state.settings.lock();
-        *s = settings.clone();
-    }
+    let settings = apply_frontend_settings(&state, settings);
     let _ = storage::save_settings(&settings);
     if let Some(w) = get_main(&app) {
         let _ = w.set_always_on_top(settings.always_on_top);
@@ -55,20 +63,14 @@ pub async fn apply_window_settings<R: Runtime>(app: AppHandle<R>, state: State<'
 
 #[tauri::command]
 pub async fn apply_hotkeys<R: Runtime>(app: AppHandle<R>, state: State<'_, Shared>, settings: Settings) -> Result<Vec<String>, String> {
-    {
-        let mut s = state.settings.lock();
-        *s = settings.clone();
-    }
+    let settings = apply_frontend_settings(&state, settings);
     let _ = storage::save_settings(&settings);
     Ok(hotkeys::register_all(&app, &settings))
 }
 
 #[tauri::command]
 pub async fn apply_theme<R: Runtime>(app: AppHandle<R>, state: State<'_, Shared>, settings: Settings) -> Result<(), String> {
-    {
-        let mut s = state.settings.lock();
-        *s = settings.clone();
-    }
+    let settings = apply_frontend_settings(&state, settings);
     let _ = storage::save_settings(&settings);
     if let Some(w) = get_main(&app) {
         apply_blur(&w, &settings.blur);
@@ -246,10 +248,25 @@ pub fn set_master_password(state: State<Shared>, old_password: String, new_passw
 
 #[tauri::command]
 pub fn unlock_app(state: State<Shared>, password: String) -> Result<bool, String> {
-    let s = state.settings.lock();
-    if !s.has_master_password { *state.locked.lock() = false; return Ok(true); }
-    let hash = s.master_hash.clone().unwrap_or_default();
-    let salt = s.master_salt.clone().unwrap_or_default();
+    let (hash, salt) = {
+        let mut s = state.settings.lock();
+        if !s.has_master_password { *state.locked.lock() = false; return Ok(true); }
+        let h = s.master_hash.clone().unwrap_or_default();
+        let sl = s.master_salt.clone().unwrap_or_default();
+        // Self-heal corrupted state caused by an older bug that wiped the hash
+        // while leaving has_master_password=true: with no hash to verify against
+        // the user would be permanently locked out, so clear the flag and let
+        // them in to set a new password.
+        if h.is_empty() || sl.is_empty() {
+            s.has_master_password = false;
+            s.master_hash = None;
+            s.master_salt = None;
+            let _ = storage::save_settings(&s);
+            *state.locked.lock() = false;
+            return Ok(true);
+        }
+        (h, sl)
+    };
     let ok = storage::verify_password(&password, &hash, &salt).map_err(|e| e.to_string())?;
     if ok { *state.locked.lock() = false; }
     Ok(ok)
