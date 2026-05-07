@@ -158,6 +158,17 @@ body { user-select: none; }
 .note-item:hover { background: rgba(255,255,255,0.04); }
 .note-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .note-item .lock { font-size: 10px; color: var(--fg-dim); }
+.note-item .rename-input {
+  flex: 1;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--accent);
+  color: var(--fg);
+  padding: 2px 4px;
+  border-radius: 3px;
+  outline: none;
+  font-size: 12px;
+  min-width: 0;
+}
 
 .editor {
   flex: 1;

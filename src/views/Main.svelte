@@ -1,15 +1,22 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { api, type NoteMeta } from "../lib/api";
-  import { showToast, settings } from "../lib/store";
+  import { showToast, settings, notesState } from "../lib/store";
+  import { get } from "svelte/store";
 
   let notes: NoteMeta[] = $state([]);
-  let activeId: string | null = $state(null);
-  let content: string = $state("");
+  let activeId: string | null = $state(get(notesState).activeId);
+  let content: string = $state(get(notesState).content);
   let query: string = $state("");
   let passwordPrompt = $state(false);
   let pendingPassword = $state("");
   let saveTimer: number | null = null;
+  let editingId: string | null = $state(null);
+  let editingText: string = $state("");
+
+  $effect(() => {
+    notesState.set({ activeId, content });
+  });
 
   const filtered = $derived(
     notes.filter(n => !query || n.name.toLowerCase().includes(query.toLowerCase()) || content.toLowerCase().includes(query.toLowerCase()))
@@ -63,14 +70,39 @@
     await refresh();
   }
 
-  async function renameNote() {
+  async function startRename() {
     if (!activeId) return;
     const n = notes.find(x => x.id === activeId);
     if (!n) return;
-    const name = prompt("新名称", n.name);
+    editingId = activeId;
+    editingText = n.name;
+    await tick();
+    const el = document.getElementById("note-rename-input") as HTMLInputElement | null;
+    el?.focus();
+    el?.select();
+  }
+
+  async function commitRename() {
+    if (!editingId) return;
+    const id = editingId;
+    const name = editingText.trim();
+    editingId = null;
+    editingText = "";
     if (!name) return;
-    const nn = await api.renameNote(activeId, name);
-    await refresh(nn.id);
+    const orig = notes.find(x => x.id === id);
+    if (orig && orig.name === name) return;
+    try {
+      const nn = await api.renameNote(id, name);
+      activeId = nn.id;
+      notes = await api.listNotes();
+    } catch (e) {
+      showToast(`重命名失败: ${e}`);
+    }
+  }
+
+  function cancelRename() {
+    editingId = null;
+    editingText = "";
   }
 
   function onInput() {
@@ -87,7 +119,21 @@
   }
 
   onMount(() => {
-    refresh();
+    (async () => {
+      notes = await api.listNotes();
+      // Restore content if we have an activeId from a previous mount
+      if (activeId) {
+        const n = notes.find(x => x.id === activeId);
+        if (!n) {
+          activeId = null;
+          content = "";
+        } else if (n.encrypted) {
+          if (!content) passwordPrompt = true;
+        } else if (!content) {
+          try { content = await api.readNote(n.id); } catch (e) { showToast(`读取失败: ${e}`); }
+        }
+      }
+    })();
     const h = (e: any) => refresh(e.detail);
     window.addEventListener("notes-refresh", h);
     return () => window.removeEventListener("notes-refresh", h);
@@ -98,7 +144,7 @@
 <div class="sidebar">
   <div class="sidebar-header">
     <button onclick={newNote} title="新建">+ 新建</button>
-    <button onclick={renameNote} title="重命名" disabled={!activeId}>✎</button>
+    <button onclick={startRename} title="重命名" disabled={!activeId}>✎</button>
     <button onclick={delNote} title="删除" disabled={!activeId}>✕</button>
   </div>
   <div class="search">
@@ -106,9 +152,20 @@
   </div>
   <div class="note-list">
     {#each filtered as n (n.id)}
-      <div class="note-item" class:active={n.id === activeId} onclick={() => select(n)} role="button" tabindex="0">
-        <span class="name">{n.name}</span>
-        {#if n.encrypted}<span class="lock">🔒</span>{/if}
+      <div class="note-item" class:active={n.id === activeId} onclick={() => editingId !== n.id && select(n)} ondblclick={() => { activeId = n.id; startRename(); }} role="button" tabindex="0">
+        {#if editingId === n.id}
+          <input
+            id="note-rename-input"
+            class="rename-input"
+            bind:value={editingText}
+            onclick={(e) => e.stopPropagation()}
+            onkeydown={(e) => { if (e.key === 'Enter') commitRename(); else if (e.key === 'Escape') cancelRename(); }}
+            onblur={commitRename}
+          />
+        {:else}
+          <span class="name">{n.name}</span>
+          {#if n.encrypted}<span class="lock">🔒</span>{/if}
+        {/if}
       </div>
     {/each}
     {#if filtered.length === 0}

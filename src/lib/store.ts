@@ -65,6 +65,8 @@ export const defaultSettings: Settings = {
   dragModifier: "Alt",
 };
 
+export const notesState = writable<{ activeId: string | null; content: string }>({ activeId: null, content: "" });
+
 export const settings = writable<Settings>({ ...defaultSettings });
 export const locked = writable<boolean>(false);
 export const toast = writable<string>("");
