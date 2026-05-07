@@ -93,9 +93,9 @@
         settings.update((s) => ({ ...s, showSidebar: !s.showSidebar }));
         scheduleSave();
       } else if (k === "1" && !e.shiftKey) {
-        e.preventDefault(); view = "main";
-      } else if (k === "2" && !e.shiftKey) {
         e.preventDefault(); view = "tasks";
+      } else if (k === "2" && !e.shiftKey) {
+        e.preventDefault(); view = "main";
       } else if (k === "," && !e.shiftKey) {
         e.preventDefault(); view = "settings";
       } else if (k === "n" && !e.shiftKey) {

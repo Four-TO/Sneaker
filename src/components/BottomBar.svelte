@@ -34,6 +34,12 @@
     showToast(next ? "背景全透明开" : "背景全透明关");
   }
 
+  async function applyOpacity(v: number) {
+    settings.update((s) => ({ ...s, opacity: v }));
+    await api.setOpacity(v);
+    scheduleSave();
+  }
+
   async function lockNow() {
     if ($settings.hasMasterPassword) await api.lockNow();
     else showToast("未设置主密码");
@@ -41,8 +47,8 @@
 </script>
 
 <div class="bottombar">
-  <button class:active={view === "main"} onclick={() => (view = "main")} title="笔记 (Ctrl+1)">📝</button>
-  <button class:active={view === "tasks"} onclick={() => (view = "tasks")} title="任务 (Ctrl+2)">📋</button>
+  <button class:active={view === "tasks"} onclick={() => (view = "tasks")} title="任务 (Ctrl+1)">📋</button>
+  <button class:active={view === "main"} onclick={() => (view = "main")} title="笔记 (Ctrl+2)">📝</button>
   {#if view === "main"}
     <button onclick={toggleSidebar} title={($settings.showSidebar ? "隐藏" : "显示") + "侧栏 (Ctrl+B)"}>
       {$settings.showSidebar ? "⮜" : "☰"}
@@ -59,6 +65,16 @@
     <button onclick={lockNow} title="立即锁定">🔒</button>
   {/if}
   <span class="spacer"></span>
+  <input
+    class="opacity-slider"
+    type="range"
+    min="0.2"
+    max="1"
+    step="0.02"
+    value={$settings.opacity}
+    oninput={(e) => applyOpacity(+(e.currentTarget as HTMLInputElement).value)}
+    title="不透明度"
+  />
   <span class="status">{Math.round($settings.opacity * 100)}%</span>
   <button class:active={view === "settings"} onclick={() => (view = view === "settings" ? "main" : "settings")} title="设置 (Ctrl+,)">
     ⚙
