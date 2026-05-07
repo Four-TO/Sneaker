@@ -27,6 +27,13 @@
     scheduleSave();
   }
 
+  function toggleTransparentBg() {
+    const next = !$settings.transparentBg;
+    settings.update((s) => ({ ...s, transparentBg: next }));
+    scheduleSave();
+    showToast(next ? "背景全透明开" : "背景全透明关");
+  }
+
   async function lockNow() {
     if ($settings.hasMasterPassword) await api.lockNow();
     else showToast("未设置主密码");
@@ -41,6 +48,9 @@
       {$settings.showSidebar ? "⮜" : "☰"}
     </button>
   {/if}
+  <button class:active={$settings.transparentBg} onclick={toggleTransparentBg} title="背景全透明">
+    {$settings.transparentBg ? "▣" : "▢"}
+  </button>
   <button onclick={togglePassthrough} title="穿透模式">
     {$settings.passthrough === "off" ? "●" : $settings.passthrough === "semi" ? "◐" : "○"}
   </button>
