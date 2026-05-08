@@ -353,6 +353,7 @@ body { user-select: none; }
 .task-input-wrap input:focus { border-color: var(--accent); }
 .task-group { margin-bottom: 10px; }
 .task-group.urgent { border-left: 2px solid #ff6b6b; padding-left: 6px; margin-left: -6px; }
+.task-group.later { border-left: 2px solid #6aa9ff; padding-left: 6px; margin-left: -6px; opacity: 0.85; }
 .task-group .group-head {
   font-size: 11px;
   color: var(--fg-dim);
@@ -414,6 +415,8 @@ body { user-select: none; }
 }
 .task-row .mini:hover { background: rgba(255,255,255,0.08); color: var(--fg); }
 .task-row .mini.danger:hover { color: var(--danger); }
+.task-row .mini.active { color: var(--accent); background: rgba(106,169,255,0.12); }
+.task-row .pin-tag { font-size: 10px; padding: 0 3px; opacity: 0.7; }
 .tasks .empty {
   padding: 14px 6px;
   color: var(--fg-dim);

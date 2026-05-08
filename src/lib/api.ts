@@ -13,8 +13,9 @@ export interface Task {
   id: string;
   title: string;
   notes: string;
-  status: "todo" | "working" | "done";
+  status: "todo" | "working" | "paused" | "done";
   pinned: boolean;
+  pinnedBottom: boolean;
   createdAt: number;
   completedAt?: number;
   order: number;
@@ -23,8 +24,9 @@ export interface Task {
 export interface TaskPatch {
   title?: string;
   notes?: string;
-  status?: "todo" | "working" | "done";
+  status?: "todo" | "working" | "paused" | "done";
   pinned?: boolean;
+  pinnedBottom?: boolean;
   order?: number;
 }
 

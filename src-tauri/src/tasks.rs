@@ -11,8 +11,10 @@ pub struct Task {
     pub title: String,
     #[serde(default)]
     pub notes: String,
-    pub status: String, // "todo" | "working" | "done"
+    pub status: String, // "todo" | "working" | "paused" | "done"
     pub pinned: bool,
+    #[serde(default)]
+    pub pinned_bottom: bool,
     pub created_at: u64,
     #[serde(default)]
     pub completed_at: Option<u64>,
@@ -27,6 +29,7 @@ pub struct TaskPatch {
     pub notes: Option<String>,
     pub status: Option<String>,
     pub pinned: Option<bool>,
+    pub pinned_bottom: Option<bool>,
     pub order: Option<i64>,
 }
 
@@ -76,6 +79,7 @@ pub fn create(title: &str) -> Result<Task> {
         notes: String::new(),
         status,
         pinned,
+        pinned_bottom: false,
         created_at: now(),
         completed_at: None,
         order: min_order - 1,
@@ -91,7 +95,14 @@ pub fn update(id: &str, patch: TaskPatch) -> Result<Task> {
     let t = &mut tasks[idx];
     if let Some(v) = patch.title { t.title = v; }
     if let Some(v) = patch.notes { t.notes = v; }
-    if let Some(v) = patch.pinned { t.pinned = v; }
+    if let Some(v) = patch.pinned {
+        t.pinned = v;
+        if v { t.pinned_bottom = false; }
+    }
+    if let Some(v) = patch.pinned_bottom {
+        t.pinned_bottom = v;
+        if v { t.pinned = false; }
+    }
     if let Some(v) = patch.order { t.order = v; }
     if let Some(v) = patch.status {
         if v == "done" && t.status != "done" { t.completed_at = Some(now()); }

@@ -11,8 +11,10 @@
   let editingText: string = $state("");
 
   const pinned = $derived(tasks.filter(t => t.pinned && t.status !== "done").sort((a,b) => a.order - b.order));
-  const working = $derived(tasks.filter(t => !t.pinned && t.status === "working").sort((a,b) => a.order - b.order));
-  const todos = $derived(tasks.filter(t => !t.pinned && t.status === "todo").sort((a,b) => a.order - b.order));
+  const working = $derived(tasks.filter(t => !t.pinned && !t.pinnedBottom && t.status === "working").sort((a,b) => a.order - b.order));
+  const paused = $derived(tasks.filter(t => !t.pinned && !t.pinnedBottom && t.status === "paused").sort((a,b) => a.order - b.order));
+  const todos = $derived(tasks.filter(t => !t.pinned && !t.pinnedBottom && t.status === "todo").sort((a,b) => a.order - b.order));
+  const pinnedBottom = $derived(tasks.filter(t => t.pinnedBottom && t.status !== "done").sort((a,b) => a.order - b.order));
   const doneToday = $derived(tasks.filter(t => t.status === "done" && isToday(t.completedAt)).sort((a,b) => (b.completedAt ?? 0) - (a.completedAt ?? 0)));
   const doneEarlier = $derived(tasks.filter(t => t.status === "done" && !isToday(t.completedAt)).sort((a,b) => (b.completedAt ?? 0) - (a.completedAt ?? 0)));
 
@@ -58,6 +60,11 @@
 
   async function togglePin(t: Task) {
     await api.updateTask(t.id, { pinned: !t.pinned });
+    await refresh();
+  }
+
+  async function togglePinBottom(t: Task) {
+    await api.updateTask(t.id, { pinnedBottom: !t.pinnedBottom });
     await refresh();
   }
 
@@ -127,15 +134,33 @@
     </div>
   {/if}
 
+  {#if paused.length}
+    <div class="task-group">
+      <div class="group-head">⏸ 暂停 · {paused.length}</div>
+      {#each paused as t (t.id)}
+        {@render row(t, false)}
+      {/each}
+    </div>
+  {/if}
+
   <div class="task-group">
     <div class="group-head">📋 Todo · {todos.length}</div>
     {#each todos as t (t.id)}
       {@render row(t, false)}
     {/each}
-    {#if todos.length === 0 && pinned.length === 0 && working.length === 0 && doneToday.length === 0}
+    {#if todos.length === 0 && pinned.length === 0 && working.length === 0 && paused.length === 0 && pinnedBottom.length === 0 && doneToday.length === 0}
       <div class="empty">暂无任务，在上方输入即可新建 (Ctrl+N)</div>
     {/if}
   </div>
+
+  {#if pinnedBottom.length}
+    <div class="task-group later">
+      <div class="group-head">📥 晚些做 · {pinnedBottom.length}</div>
+      {#each pinnedBottom as t (t.id)}
+        {@render row(t, false)}
+      {/each}
+    </div>
+  {/if}
 
   {#if doneToday.length}
     <div class="task-group done">
@@ -184,6 +209,16 @@
       <span class="title" ondblclick={() => startEdit(t)}>{t.title}</span>
     {/if}
 
+    {#if t.status !== "done"}
+      {#if t.pinned}
+        <span class="pin-tag" title="置顶">📌</span>
+      {:else if t.pinnedBottom}
+        <span class="pin-tag" title="置底">📥</span>
+      {:else if t.status === "paused"}
+        <span class="pin-tag" title="暂停">⏸</span>
+      {/if}
+    {/if}
+
     <span class="time" title="创建于 {fmtDate(t.createdAt)} {fmtTime(t.createdAt)}">📅 {fmtDate(t.createdAt)}</span>
     {#if t.status === "done"}
       <span class="time" title="完成于 {fmtDate(t.completedAt)} {fmtTime(t.completedAt)}">✓ {fmtDate(t.completedAt)} {fmtTime(t.completedAt)}</span>
@@ -192,11 +227,12 @@
     <span class="actions">
       {#if t.status !== "done"}
         {#if t.status === "working"}
-          <button class="mini" onclick={() => setStatus(t, "todo")} title="暂停 (回 Todo)">⏸</button>
+          <button class="mini" onclick={() => setStatus(t, "paused")} title="暂停">⏸</button>
         {:else}
-          <button class="mini" onclick={() => setStatus(t, "working")} title="开始 (Working)">▶</button>
+          <button class="mini" onclick={() => setStatus(t, "working")} title={t.status === "paused" ? "继续 (Working)" : "开始 (Working)"}>▶</button>
         {/if}
-        <button class="mini" onclick={() => togglePin(t)} title={t.pinned ? "取消置顶" : "置顶紧急"}>📌</button>
+        <button class="mini" class:active={t.pinned} onclick={() => togglePin(t)} title={t.pinned ? "取消置顶" : "置顶紧急"}>📌</button>
+        <button class="mini" class:active={t.pinnedBottom} onclick={() => togglePinBottom(t)} title={t.pinnedBottom ? "取消置底" : "晚些做（置底）"}>📥</button>
       {/if}
       <button class="mini danger" onclick={() => del(t)} title="删除">✕</button>
     </span>
